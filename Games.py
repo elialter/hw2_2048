@@ -57,7 +57,7 @@ class CustomGame(GameGrid):
                 time_diff = end - start
                 #print(time_diff)
                 if time_diff > self.move_time_limit:
-                    print(f'time up for player {Turn.MOVE_PLAYER_TURN}')
+                    print(f'Time up for player {Turn.MOVE_PLAYER_TURN}')
                     break
 
                 if move is None:

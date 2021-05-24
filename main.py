@@ -24,7 +24,7 @@ if __name__ == "__main__":
                         help='Option to Player keyboard game or custom game with agents.',
                         choices=games)
 
-    parser.add_argument('-player1', default='GreedyMovePlayer', type=str,
+    parser.add_argument('-player1', default='ImprovedGreedyMovePlayer', type=str,
                         help='The type of the first player(Move player).',
                         choices=move_players.keys())
     parser.add_argument('-player2', default='RandomIndexPlayer', type=str,

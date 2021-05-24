@@ -1,6 +1,7 @@
 import logic
 import random
 from AbstractPlayers import *
+import constants as c
 import time
 
 # commands to use for move players. dictionary : Move(enum) -> function(board),
@@ -58,7 +59,30 @@ class ImprovedGreedyMovePlayer(AbstractMovePlayer):
 
     def get_move(self, board, time_limit) -> Move:
         # TODO: erase the following line and implement this function.
-        raise NotImplementedError
+        optional_moves_score = {}
+        open_spaces_move_score = {}
+        max_value_score = {}
+        for move in Move:
+            new_board, done, score = commands[move](board)
+            open_spaces_move_score[move] = 0
+            max_value_score[move] = 0
+            for i in range(c.GRID_LEN):
+                for j in range(c.GRID_LEN):
+                    if new_board[i][j] == 0:
+                        open_spaces_move_score[move] += 1
+                    if new_board[i][j] > max_value_score[move]:
+                        max_value_score[move] = new_board[i][j]
+            if done:
+                optional_moves_score[move] = score
+            optional_moves_score[move] += open_spaces_move_score[move]
+
+        selected_move = max(optional_moves_score, key=optional_moves_score.get)
+        for move in Move:
+            if optional_moves_score[selected_move] == optional_moves_score[move] and\
+                    max_value_score[move] > max_value_score[selected_move]:
+                selected_move = move
+
+        return selected_move
 
     # TODO: add here helper functions in class, if needed
 
