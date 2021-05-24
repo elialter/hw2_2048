@@ -3,6 +3,7 @@ import random
 from AbstractPlayers import *
 import constants as c
 import time
+import math
 
 # commands to use for move players. dictionary : Move(enum) -> function(board),
 # all the functions {up,down,left,right) receive board as parameter and return tuple of (new_board, done, score).
@@ -61,30 +62,35 @@ class ImprovedGreedyMovePlayer(AbstractMovePlayer):
         # TODO: erase the following line and implement this function.
         optional_moves_score = {}
         open_spaces_move_score = {}
-        max_value_score = {}
+
         for move in Move:
             new_board, done, score = commands[move](board)
             open_spaces_move_score[move] = 0
-            max_value_score[move] = 0
             for i in range(c.GRID_LEN):
                 for j in range(c.GRID_LEN):
                     if new_board[i][j] == 0:
                         open_spaces_move_score[move] += 1
-                    if new_board[i][j] > max_value_score[move]:
-                        max_value_score[move] = new_board[i][j]
             if done:
+                colu_score = col_score(new_board)
+                row_score = col_score(logic.transpose(new_board))
+                max_row_col = max(colu_score, row_score)
                 optional_moves_score[move] = score
-            optional_moves_score[move] += open_spaces_move_score[move]
+                optional_moves_score[move] = optional_moves_score[move] + max_row_col
 
-        selected_move = max(optional_moves_score, key=optional_moves_score.get)
-        for move in Move:
-            if optional_moves_score[selected_move] == optional_moves_score[move] and\
-                    max_value_score[move] > max_value_score[selected_move]:
-                selected_move = move
-
-        return selected_move
+        return max(optional_moves_score, key=optional_moves_score.get)
 
     # TODO: add here helper functions in class, if needed
+
+
+def col_score(mat):
+    score = 0
+    for i in range(c.GRID_LEN):
+        for j in range(c.GRID_LEN-1):
+            if mat[i][j] == mat[i][j+1] and mat[i][j] != 0:
+                mat[i][j] *= 2
+                mat[i][j+1] = 0
+                score += mat[i][j]
+    return score
 
 
 # part B
