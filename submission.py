@@ -75,7 +75,7 @@ class ImprovedGreedyMovePlayer(AbstractMovePlayer):
                 row_score = col_score(logic.transpose(new_board))
                 max_row_col = max(colu_score, row_score)
                 optional_moves_score[move] = score
-                optional_moves_score[move] = optional_moves_score[move] + max_row_col
+                optional_moves_score[move] = optional_moves_score[move] + max_row_col + open_spaces_move_score[move]
 
         return max(optional_moves_score, key=optional_moves_score.get)
 
