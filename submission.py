@@ -101,13 +101,58 @@ class MiniMaxMovePlayer(AbstractMovePlayer):
     """
     def __init__(self):
         AbstractMovePlayer.__init__(self)
+        self.indexPlayer = MiniMaxIndexPlayer()
         # TODO: add here if needed
 
     def get_move(self, board, time_limit) -> Move:
         # TODO: erase the following line and implement this function.
-        raise NotImplementedError
+        curr_depth = 1
+        start_time = time.time()
+        optional_moves_score = {}
+        best_move = Move.UP
+        while((time.time() - start_time) < time_limit):
+            for move in Move:
+                new_board, done, score = commands[move](board)
+                optional_moves_score[move] = self.score_calculate(new_board, curr_depth)
+            best_move = max(optional_moves_score, key=optional_moves_score.get)
+            curr_depth += 1
+
+        return best_move
+
 
     # TODO: add here helper functions in class, if needed
+
+    def score_calculate(self, board, depth):
+        if depth == 0:
+            return self.calculate_score(board) + self.heuristic(board)
+
+        best_score = 0
+        for move in Move:
+            new_board, done, score = commands[move](board)
+            move_score = self.score_index_calculate(new_board, depth - 1)
+            if best_score < move_score:
+                best_score = move_score
+        return best_score
+
+
+    def score_index_calculate(self, board, depth) -> int:
+        if depth == 0:
+            return self.calculate_score(board) + self.heuristic(board)
+
+        best_score = 0
+        for move in Move:
+            new_board, done, score = commands[move](board)
+            move_score = self.score_calculate(new_board, depth - 1)
+            if best_score > move_score:
+                best_score = move_score
+        return best_score
+
+    def heuristic(self, board):
+        return 0
+
+
+    def calculate_score(self, board):
+        return 0
 
 
 class MiniMaxIndexPlayer(AbstractIndexPlayer):
