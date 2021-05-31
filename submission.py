@@ -13,7 +13,6 @@ import math
 commands = {Move.UP: logic.up, Move.DOWN: logic.down,
             Move.LEFT: logic.left, Move.RIGHT: logic.right}
 
-
 # generate value between {2,4} with probability p for 4
 def gen_value(p=PROBABILITY):
     return logic.gen_two_or_four(p)
@@ -71,27 +70,13 @@ class ImprovedGreedyMovePlayer(AbstractMovePlayer):
                     if new_board[i][j] == 0:
                         open_spaces_move_score[move] += 1
             if done:
-                colu_score = col_score(new_board)
-                row_score = col_score(logic.transpose(new_board))
-                max_row_col = max(colu_score, row_score)
+                heuristic_value = heuristic(new_board)
                 optional_moves_score[move] = score
-                optional_moves_score[move] = optional_moves_score[move] + max_row_col + open_spaces_move_score[move]
+                optional_moves_score[move] = optional_moves_score[move] + heuristic_value + open_spaces_move_score[move]
 
         return max(optional_moves_score, key=optional_moves_score.get)
 
     # TODO: add here helper functions in class, if needed
-
-
-def col_score(mat):
-    score = 0
-    for i in range(c.GRID_LEN):
-        for j in range(c.GRID_LEN-1):
-            if mat[i][j] == mat[i][j+1] and mat[i][j] != 0:
-                mat[i][j] *= 2
-                mat[i][j+1] = 0
-                score += mat[i][j]
-    return score
-
 
 # part B
 class MiniMaxMovePlayer(AbstractMovePlayer):
@@ -110,49 +95,54 @@ class MiniMaxMovePlayer(AbstractMovePlayer):
         start_time = time.time()
         optional_moves_score = {}
         best_move = Move.UP
-        while((time.time() - start_time) < time_limit):
+        safety = time_limit * 0.1
+        time_diff = time.time() - start_time
+        while time_diff < time_limit - safety:
             for move in Move:
                 new_board, done, score = commands[move](board)
-                optional_moves_score[move] = self.score_calculate(new_board, curr_depth)
+                if done:
+                    optional_moves_score[move] = self.score_calculate(new_board, curr_depth, start_time, time_limit)
             best_move = max(optional_moves_score, key=optional_moves_score.get)
             curr_depth += 1
+            time_diff = time.time() - start_time
 
         return best_move
 
-
     # TODO: add here helper functions in class, if needed
 
-    def score_calculate(self, board, depth):
+    def score_calculate(self, board, depth, start_time, time_limit):
         if depth == 0:
-            return self.calculate_score(board) + self.heuristic(board)
+            return calculate_score(board) + heuristic(board)
 
+        safety = time_limit * 0.1
         best_score = 0
         for move in Move:
+            time_diff = time.time() - start_time
+            if time_diff > time_limit - safety:
+                break
             new_board, done, score = commands[move](board)
-            move_score = self.score_index_calculate(new_board, depth - 1)
-            if best_score < move_score:
-                best_score = move_score
+            if done is True:
+                move_score = self.score_index_calculate(new_board, depth - 1, start_time, time_limit)
+                if best_score < move_score:
+                    best_score = move_score
         return best_score
 
-
-    def score_index_calculate(self, board, depth) -> int:
+    def score_index_calculate(self, board, depth, start_time, time_limit) -> int:
         if depth == 0:
-            return self.calculate_score(board) + self.heuristic(board)
+            return calculate_score(board) + heuristic(board)
 
-        best_score = 0
-        for move in Move:
-            new_board, done, score = commands[move](board)
-            move_score = self.score_calculate(new_board, depth - 1)
-            if best_score > move_score:
-                best_score = move_score
-        return best_score
-
-    def heuristic(self, board):
-        return 0
-
-
-    def calculate_score(self, board):
-        return 0
+        move_score = []
+        safety = time_limit * 0.1
+        for i in range(c.GRID_LEN):
+            for j in range(c.GRID_LEN):
+                time_diff = time.time() - start_time
+                if time_diff > time_limit - safety:
+                    break
+                if board[i][j] == 0:
+                    board[i][j] = 2
+                    move_score.append(self.score_calculate(board, depth - 1, start_time, time_limit))
+                    board[i][j] = 0
+        return min(move_score, default=-1)
 
 
 class MiniMaxIndexPlayer(AbstractIndexPlayer):
@@ -168,7 +158,80 @@ class MiniMaxIndexPlayer(AbstractIndexPlayer):
 
     def get_indices(self, board, value, time_limit) -> (int, int):
         # TODO: erase the following line and implement this function.
-        raise NotImplementedError
+        optimal_i = 0
+        optimal_j = 0
+        curr_depth = 1
+        start_time = time.time()
+        optional_indexes_score = []
+        safety = time_limit * 0.1
+
+        time_diff = time.time() - start_time
+        while time_diff < time_limit - safety:
+            for i in range(c.GRID_LEN):
+                for j in range(c.GRID_LEN):
+                    if board[i][j] == 0:
+                        board[i][j] = 2
+                        optional_indexes_score.append(IndexMove(self.score_calculate(board, curr_depth, start_time, time_limit), i, j))
+                        board[i][j] = 0
+            minimal_score = optional_indexes_score[0].score
+            for place in range(len(optional_indexes_score)):
+                if optional_indexes_score[place].score < minimal_score and optional_indexes_score[place].score is not -1:
+                    minimal_score = optional_indexes_score[place].score
+            for place in range(len(optional_indexes_score)):
+                if optional_indexes_score[place].score == minimal_score:
+                    optimal_i = optional_indexes_score[place].i
+                    optimal_j = optional_indexes_score[place].j
+                    break
+            curr_depth += 1
+            time_diff = time.time() - start_time
+
+        return optimal_i, optimal_j
+
+    def score_calculate(self, board, depth, start_time, time_limit) -> int:
+        if depth == 0:
+            return calculate_score(board) + heuristic(board)
+
+        move_score = []
+        safety = time_limit * 0.1
+        for i in range(c.GRID_LEN):
+            for j in range(c.GRID_LEN):
+                time_diff = time.time() - start_time
+                if time_diff > time_limit - safety:
+                    break
+                if board[i][j] == 0:
+                    board[i][j] = 2
+                    move_score.append(self.score_move_calculate(board, depth - 1, start_time, time_limit))
+                    board[i][j] = 0
+        return min(move_score, default=-1)
+
+    def score_move_calculate(self, board, depth, start_time, time_limit):
+        if depth == 0:
+            return calculate_score(board) + heuristic(board)
+
+        safety = time_limit * 0.1
+        best_score = 0
+        for move in Move:
+            time_diff = time.time() - start_time
+            if time_diff > time_limit - safety:
+                break
+            new_board, done, score = commands[move](board)
+            if done is True:
+                move_score = self.score_calculate(new_board, depth - 1, start_time, time_limit)
+                if best_score < move_score:
+                    best_score = move_score
+        return best_score
+
+
+class IndexMove(object):
+
+    def __init__(self, score, i, j):
+        object.__init__(self)
+        self.score = score
+        self.i = i
+        self.j = j
+        # TODO: add here if needed
+
+
 
     # TODO: add here helper functions in class, if needed
 
@@ -239,3 +302,28 @@ class ContestMovePlayer(AbstractMovePlayer):
 
     # TODO: add here helper functions in class, if needed
 
+
+def calculate_score(board):
+    score = 0
+    for i in range(c.GRID_LEN):
+        for j in range(c.GRID_LEN):
+            if board[i][j] != 0:
+                score += board[i][j] * (math.log(board[i][j], 2) - 1)
+    return score
+
+
+def heuristic(board):
+    colu_score = col_heuristic(board)
+    row_score = col_heuristic(logic.transpose(board))
+    return max(colu_score, row_score)
+
+
+def col_heuristic(mat):
+    score = 0
+    for i in range(c.GRID_LEN):
+        for j in range(c.GRID_LEN-1):
+            if mat[i][j] == mat[i][j+1] and mat[i][j] != 0:
+                mat[i][j] *= 2
+                mat[i][j+1] = 0
+                score += mat[i][j]
+    return score
