@@ -87,7 +87,8 @@ class MiniMaxMovePlayer(AbstractMovePlayer):
     """
     def __init__(self):
         AbstractMovePlayer.__init__(self)
-        self.indexPlayer = MiniMaxIndexPlayer()
+        self.depth_sum = 0
+        self.counter = 0
         # TODO: add here if needed
 
     def get_move(self, board, time_limit) -> Move:
@@ -108,6 +109,8 @@ class MiniMaxMovePlayer(AbstractMovePlayer):
             optional_moves_score.clear()
             time_diff = time.time() - start_time
 
+        self.depth_sum += curr_depth
+        self.counter += 1
         return best_move
 
     # TODO: add here helper functions in class, if needed
@@ -146,6 +149,9 @@ class MiniMaxMovePlayer(AbstractMovePlayer):
                     move_score.append(self.score_calculate(new_board, depth - 1, start_time, time_limit))
         return min(move_score, default=-1)
 
+    def get_average(self):
+        return self.depth_sum / self.counter
+
 
 class MiniMaxIndexPlayer(AbstractIndexPlayer):
     """MiniMax Index Player,
@@ -161,14 +167,12 @@ class MiniMaxIndexPlayer(AbstractIndexPlayer):
     def get_indices(self, board, value, time_limit) -> (int, int):
         # TODO: erase the following line and implement this function.
         # initialization:
-        minimal_score = 0
         optimal_i = 0
         optimal_j = 0
         curr_depth = 1
         start_time = time.time()
         optional_indexes_score = []
         safety = time_limit * 0.1
-        time_up = False
 
         time_diff = time.time() - start_time
         while time_diff < time_limit - safety:
@@ -240,10 +244,6 @@ class IndexMove(object):
         # TODO: add here if needed
 
 
-
-    # TODO: add here helper functions in class, if needed
-
-
 # part C
 class ABMovePlayer(AbstractMovePlayer):
     """Alpha Beta Move Player,
@@ -252,13 +252,80 @@ class ABMovePlayer(AbstractMovePlayer):
     """
     def __init__(self):
         AbstractMovePlayer.__init__(self)
+        self.depth_sum = 0
+        self.counter = 0
         # TODO: add here if needed
 
     def get_move(self, board, time_limit) -> Move:
         # TODO: erase the following line and implement this function.
-        raise NotImplementedError
+        start_time = time.time()
+        alpha = -math.inf
+        beta = math.inf
+        curr_depth = 1
+        optional_moves_score = {}
+        best_move = Move.UP
+        safety = time_limit * 0.1
+        time_diff = time.time() - start_time
+        while time_diff < time_limit - safety:
+            for move in Move:
+                new_board, done, score = commands[move](board)
+                if done:
+                    optional_moves_score[move] = self.score_index_calculate(
+                        new_board, curr_depth, start_time, time_limit, alpha, beta)
+            best_move = max(optional_moves_score, key=optional_moves_score.get)
+            curr_depth += 1
+            optional_moves_score.clear()
+            time_diff = time.time() - start_time
+
+        self.depth_sum += curr_depth
+        self.counter += 1
+        return best_move
 
     # TODO: add here helper functions in class, if needed
+
+    def score_calculate(self, board, depth, start_time, time_limit, alpha, beta):
+        if depth == 0:
+            return calculate_score(board) + heuristic(board)
+
+        safety = time_limit * 0.1
+        best_score = -1
+        for move in Move:
+            time_diff = time.time() - start_time
+            if time_diff > time_limit - safety:
+                break
+            new_board, done, score = commands[move](board)
+            if done is True:
+                move_score = self.score_index_calculate(new_board, depth - 1, start_time, time_limit, alpha, beta)
+                best_score = max(best_score, move_score)
+                alpha = max(alpha, best_score)
+                if best_score >= beta:
+                    return math.inf
+        return best_score
+
+    def score_index_calculate(self, board, depth, start_time, time_limit, alpha, beta):
+        if depth == 0:
+            return calculate_score(board) + heuristic(board)
+        minimal_score = math.inf
+        move_score = []
+        safety = time_limit * 0.1
+        for i in range(c.GRID_LEN):
+            for j in range(c.GRID_LEN):
+                time_diff = time.time() - start_time
+                if time_diff > time_limit - safety:
+                    break
+                if board[i][j] == 0:
+                    new_board = copyBoard(board)
+                    new_board[i][j] = 2
+                    current_score = self.score_calculate(new_board, depth - 1, start_time, time_limit, alpha, beta)
+                    move_score.append(current_score)
+                    minimal_score = min(minimal_score, current_score)
+                    beta = min(minimal_score, beta)
+                    if minimal_score <= alpha:
+                        return -math.inf
+        return min(move_score, default=-1)
+
+    def get_average(self):
+        return self.depth_sum / self.counter
 
 
 # part D
