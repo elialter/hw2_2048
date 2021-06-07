@@ -270,8 +270,9 @@ class ABMovePlayer(AbstractMovePlayer):
             for move in Move:
                 new_board, done, score = commands[move](board)
                 if done:
-                    optional_moves_score[move] = self.score_index_calculate(
-                        new_board, curr_depth, start_time, time_limit, alpha, beta)
+                    move_score = self.score_index_calculate(new_board, curr_depth, start_time, time_limit, alpha, beta)
+                    optional_moves_score[move] = move_score
+                    alpha = max(alpha, max(optional_moves_score))
             best_move = max(optional_moves_score, key=optional_moves_score.get)
             curr_depth += 1
             optional_moves_score.clear()
