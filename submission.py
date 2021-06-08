@@ -88,6 +88,8 @@ class MiniMaxMovePlayer(AbstractMovePlayer):
     """
     def __init__(self):
         AbstractMovePlayer.__init__(self)
+        self.depths_sum = 0
+        self.counter = 0
         # TODO: add here if needed
 
     def get_move(self, board, time_limit) -> Move:
@@ -108,6 +110,8 @@ class MiniMaxMovePlayer(AbstractMovePlayer):
             optional_moves_score.clear()
             time_diff = time.time() - start_time
 
+        self.depths_sum += curr_depth
+        self.counter += 1
         return best_move
 
     # TODO: add here helper functions in class, if needed
@@ -145,6 +149,9 @@ class MiniMaxMovePlayer(AbstractMovePlayer):
                     new_board[i][j] = 2
                     move_score.append(self.score_calculate(new_board, depth - 1, start_time, time_limit))
         return min(move_score, default=-1)
+
+    def get_average(self):
+        return self.depths_sum / self.counter
 
 
 class MiniMaxIndexPlayer(AbstractIndexPlayer):
@@ -246,30 +253,34 @@ class ABMovePlayer(AbstractMovePlayer):
     """
     def __init__(self):
         AbstractMovePlayer.__init__(self)
+        self.depths_sum = 0
+        self.counter = 0
         # TODO: add here if needed
 
     def get_move(self, board, time_limit) -> Move:
         # TODO: erase the following line and implement this function.
         start_time = time.time()
-        alpha = -math.inf
-        beta = math.inf
         curr_depth = 1
         optional_moves_score = {}
         best_move = Move.UP
         safety = time_limit * 0.1
         time_diff = time.time() - start_time
         while time_diff < time_limit - safety:
+            alpha = -math.inf
+            beta = math.inf
             for move in Move:
                 new_board, done, score = commands[move](board)
                 if done:
                     move_score = self.score_index_calculate(new_board, curr_depth, start_time, time_limit, alpha, beta)
                     optional_moves_score[move] = move_score
-                    alpha = max(alpha, max(optional_moves_score))
+                    alpha = max(alpha, move_score)
             best_move = max(optional_moves_score, key=optional_moves_score.get)
             curr_depth += 1
             optional_moves_score.clear()
             time_diff = time.time() - start_time
 
+        self.depths_sum += curr_depth
+        self.counter += 1
         return best_move
 
     # TODO: add here helper functions in class, if needed
@@ -279,7 +290,7 @@ class ABMovePlayer(AbstractMovePlayer):
             return calculate_score(board) + heuristic(board)
 
         safety = time_limit * 0.1
-        best_score = -1
+        best_score = -math.inf
         for move in Move:
             time_diff = time.time() - start_time
             if time_diff > time_limit - safety:
@@ -314,6 +325,9 @@ class ABMovePlayer(AbstractMovePlayer):
                     if minimal_score <= alpha:
                         return -math.inf
         return min(move_score, default=-1)
+
+    def get_average(self):
+        return self.depths_sum / self.counter
 
 
 # part D

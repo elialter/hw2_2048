@@ -24,14 +24,14 @@ if __name__ == "__main__":
                         help='Option to Player keyboard game or custom game with agents.',
                         choices=games)
 
-    parser.add_argument('-player1', default='MiniMaxMovePlayer', type=str,
+    parser.add_argument('-player1', default='ABMovePlayer', type=str,
                         help='The type of the first player(Move player).',
                         choices=move_players.keys())
     parser.add_argument('-player2', default='MiniMaxIndexPlayer', type=str,
                         help='The type of the second player(Index Player).',
                         choices=index_players.keys())
 
-    parser.add_argument('-move_time', default=2, type=float,
+    parser.add_argument('-move_time', default=4, type=float,
                         help='Time (sec) for each turn.')
 
     args = parser.parse_args()
