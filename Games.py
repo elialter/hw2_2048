@@ -112,7 +112,8 @@ class CustomGame(GameGrid):
 
         max_val = max(max(row) for row in self.matrix)
         print(f'Game Over with max value = {max_val} and Total score = {self.total_score}')
-        average = self.move_player.get_average()
-        print(f'Average depth: = {average}')
+        ava = self.move_player.get_average_depth()
+        print(f'the average depth is = {ava}')
+
         # See the final board before it disappears
         time.sleep(3)
